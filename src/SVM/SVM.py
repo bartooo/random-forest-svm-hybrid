@@ -110,7 +110,8 @@ class SVM:
         Returns:
             np.ndarray: function values for samples
         """
-        # assert X.shape[1] == self.W.shape[0]
+        if len(X.shape) == 2:
+            assert X.shape[1] == self.W.shape[0]
         return np.dot(X, self.W) - self.b
 
     def _classify_y(self, X: np.ndarray) -> np.ndarray:
