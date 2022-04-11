@@ -195,7 +195,7 @@ y(x) =
 \right
 }
 \end{equation}
-
+Na końcu procesu inferencji, otrzymane predykcje są mapowane z powrotem do odpowiednich klas ze zbioru $X$, przykładowo: $-1 \xrightarrow{} 0 $.
 \\
 Ze względu na trenowanie dopuszczające pomyłki, aby otrzymać wyżej wymienioną funkcję $f$, należy znaleźć parametry $(w,b)$, minimalizujące funkcję straty $J$:
 \begin{align}
@@ -215,7 +215,7 @@ Wymienione wyżej warunki (4) oraz (5) w połączeniu z postacią funkcji straty
 \end{equation}
 
 \\
-Powyższy opis algorytmu można podsumować w postaci algorytmu uczenia (Algorithm 2) oraz algorytmu predykcji (Algorithm 3). W algorytmie predykcji zastosowane zostało wyrażenie logiczne, zwracające $1$ gdy jest prawdziwe, a $0$ gdy fałszywe, co pozwala mu zwracać poprawne predykcje. W algorytmie uczenia, na początku poprawiane są otrzymane na wejściu etykiety tak, aby były ze zbioru $\{-1,1\}$, następnie inicjalizowane są parametry modelu i przekazywane do metody optymalizacyjnej, której opis znajduje się w następnym podrozdziale. Na końcu zwracane są wytrenowane parametry modelu. 
+Powyższy opis algorytmu można podsumować w postaci algorytmu uczenia (Algorithm 2) oraz algorytmu predykcji (Algorithm 3). W algorytmie predykcji zastosowane zostało wyrażenie logiczne, zwracające $1$ gdy jest prawdziwe, a $0$ gdy fałszywe, co pozwala mu zwracać numery klas zamiast liczb rzeczywistych. Na końcu, zwracane klasy mapowane są do odpowiednich wartości, przykładowo: $-1 \xrightarrow{} 0 $. W algorytmie uczenia, początkowo poprawiane są wejściowe etykiety tak, aby były ze zbioru $\{-1,1\}$, następnie inicjalizowane są parametry modelu i przekazywane do metody optymalizacyjnej, której opis znajduje się w następnym podrozdziale. Na końcu zwracane są wytrenowane parametry modelu. 
 
 \begin{algorithm}
 \caption{Uczenie SVM}\label{alg:cap}
@@ -235,12 +235,12 @@ Powyższy opis algorytmu można podsumować w postaci algorytmu uczenia (Algorit
 \begin{math}\mathit{(w,b)}\end{math}: parametry modelu,
 \begin{math}\lambda\end{math}: parametr funkcji straty
 \begin{algorithmic}[1]
-\State{\Return \begin{math}2\cdot((X\cdot w - b) > 0) -1\end{math}}
+\State{\Return \texttt{repair\_targets}(\begin{math}2\cdot((X\cdot w - b) > 0) -1\end{math})}
 \end{algorithmic}
 \end{algorithm}
 
 \subsection{Optymalizacja}
-Nierozłącznym elementem uczenia modelu SVM, jest optymalizacja jego parametrów w postaci minimalizacji funkcji straty $J$. W ramach projektu zaimplementowany został algorytm Stochastycznego Spadku Gradientowego (Stochastic Gradient Descent / SGD), do którego działania wymagane jest obliczenie gradientu funkcji straty $J(w,b)$ po parametrach modelu $w$ oraz $b$.
+Istotnym elementem uczenia modelu SVM, jest wyznaczenie jego parametrów poprzez minimalizację funkcji straty $J$. Zaimplementowany został algorytm Stochastycznego Spadku Gradientowego (Stochastic Gradient Descent / SGD), do którego działania wymagane jest obliczenie gradientu funkcji straty $J(w,b)$ po parametrach modelu $w$ oraz $b$.
 \begin{equation}
 \nabla J =
 \begin{bmatrix}
@@ -344,7 +344,7 @@ Na początku konieczne jest przerobienie etykiet klas dla przykładów trenując
         1
     \end{vmatrix},  b = 3
 \end{gather*}
-Przy założeniu, że $max\_steps=1$, $\lambda = 0.5$ oraz $\beta = 0.2$, wykonywany jest dokładnie jeden krok algorytmu SGD:
+Przy założeniu, że $max\_steps=1$, $\lambda = 0.5$ oraz $\beta = 0.2$, wykonywany jest jeden krok SGD:
 \begin{gather*}
     1-f(X_T)\cdot Y'_T = \begin{vmatrix}
         2\\
@@ -432,7 +432,7 @@ Na końcu uczenia ustalane są ostateczne parametry modelu:
 \end{gather*}
 
 \section{Las losowy}
-Las losowy będzie wykorzystywał oba algorytmy opisane powyżej. Za klasycznym algorytmem lasu losowego stoi idea baggingu. W algorytmie konstruuje się wiele nieskorelowanych drzew losowych, a następnie się je uśrednia. W przypadku tej modyfikacji algorytmu, zamiast samych drzew decyzyjnych, występował będzie zbiór klasyfikatorów - drzew decyzyjnych oraz SVM. Ponadto w procesie uczenia drzewa losowego przed każdym podziałem węzła losowany będzie bez zwracania podzbiór indeksów atrybutów uwzględnianych w procesie podziału. Zasadniczą ideą baggingu jest uśrednienie wielu modeli z dość małym obciążeniem, w skutek czego zmniejszana jest ich wariancja.
+Las losowy będzie wykorzystywał oba algorytmy opisane powyżej. Za klasycznym algorytmem lasu losowego stoi idea baggingu. W algorytmie konstruuje się wiele nieskorelowanych drzew losowych, a następnie się je uśrednia. W przypadku modyfikacji algorytmu, wykonywanego w ramach projektu, zamiast samych drzew decyzyjnych, występował będzie zbiór klasyfikatorów - drzew decyzyjnych oraz SVM. Każdy klasyfikator wytrenowany będzie na zbiorze próbek danych losowanych z oryginalnego zbioru ze zwracaniem. Ponadto w procesie uczenia drzewa losowego przed każdym podziałem węzła losowany będzie bez zwracania podzbiór indeksów atrybutów uwzględnianych w procesie podziału. Natomiast w procesie uczenia SVM, podzbiór indeksów atrybutów losowany będzie raz, przed rozpoczęciem procedury treningowej. Zasadniczą ideą baggingu jest uśrednienie wielu modeli z dość małym obciążeniem, w skutek czego zmniejszana jest ich wariancja.
 
 \subsection{Opis algorytmu}
 
@@ -441,15 +441,17 @@ Las losowy będzie wykorzystywał oba algorytmy opisane powyżej. Za klasycznym 
 \hspace*{\algorithmicindent} \textbf{Input:} \begin{math}\mathit{S}\end{math}: zbiór par uczących, \begin{math}\mathit{Y}\end{math}: zbiór klas, $D$: zbiór atrybutów wejściowych, $B$: liczba klasyfikatorów
 \begin{algorithmic}[1]
 \For {b = 1 to B:}
-    \State{Wylosuj ze zwracaniem $|S|$ próbek danych ze zbioru $S$}
+    \State{Wylosuj ze zwracaniem $|S|$ próbek danych ze zbioru $S$.}
     \If{b$\mod$ 2 == 0}
-        \State{Wytrenuj drzewo decyzyjne algorytmem ID3, przed każdym podziałem węzła losując bez zwracania podzbiór \begin{math}
+        \State{Wytrenuj drzewo decyzyjne algorytmem ID3 na wylosowanym zbiorze, przed każdym podziałem węzła losując bez zwracania podzbiór \begin{math}
             m \leq |D|
-        \end{math} atrybutów uwzględnianych przy jego podziale}
+        \end{math} atrybutów uwzględnianych przy jego podziale.}
     \Else
-        \State{Wytrenuj SVM}
+        \State{Wylosuj bez zwracania podzbiór podzbiór \begin{math}
+            m \leq |D|
+        \end{math} atrybutów. Wytrenuj SVM na wylosowanym zbiorze, uwzględniając tylko wylosowane atrybuty.}
     \EndIf
-    \State{Dodaj wytrenowany klasyfikator do zbioru klasyfikatorów lasu losowego}
+    \State{Dodaj wytrenowany klasyfikator do zbioru klasyfikatorów lasu losowego.}
 \end{algorithmic}
 \end{algorithm}
 
@@ -459,9 +461,8 @@ Liczba wszystkich klasyfikatorów w lesie losowym jest hiperparametrem algorytmu
 \textit{Linia 2:}
 Trenując każdy model w lesie losowym na różnych podzbiorach oryginalnego zbioru danych (z założeniem, że próbki danych w podzbiorze mogą się powtarzać) redukowana jest wariancja modelu, w skutek czego zmniejszane jest przeuczenie lasu.\\
 
-\textit{Linia 4:}
-Przed każdym podziałem węzła w drzewie decyzyjnym losowany jest bez zwracania podzbiór atrybutów rozważanych podczas podziału. Ta modyfikacja klasycznego algorytmu uczenia drzewa zmniejsza korelacje między poszczególnymi drzewami w lesie. Gdyby ta modyfikacja nie była zastosowana, atrybutami podziału węzłów w większości drzew w lesie byłyby takie, które najskuteczniej dzielą zbiór danych. Wskutek tego las składałby się ze skorelowanych drzew, co nie zwiększyłoby skuteczności modelu, ponieważ słabe klasyfikatory w lesie byłyby zgodne co do złych predykcji, a to by skutkowało błędnymi ostatecznymi predykcjami lasu.
-
+\textit{Linie 4-6:}
+Przed każdym podziałem węzła w drzewie decyzyjnym losowany jest bez zwracania podzbiór atrybutów rozważanych podczas podziału. Ta modyfikacja klasycznego algorytmu uczenia drzewa zmniejsza korelacje między poszczególnymi drzewami w lesie. Gdyby ta modyfikacja nie była zastosowana, atrybutami podziału węzłów w większości drzew w lesie byłyby takie, które najskuteczniej dzielą zbiór danych. Wskutek tego las składałby się ze skorelowanych drzew, co nie zwiększyłoby skuteczności modelu, ponieważ słabe klasyfikatory w lesie byłyby zgodne co do złych predykcji, a to by skutkowało błędnymi ostatecznymi predykcjami lasu. Podobnie przed uczeniem SVM losowany jest bez zwracania podzbiór atrybutów uwzględnianych w procesie uczenia - model uczy się tylko na tych atrybutach.
 \subsection{Predykcje algorytmu}
 Po wytrenowaniu wszystkich klasyfikatorów, predykcją lasu losowego jest klasa większościowa w zbiorze predykcji każdego z klasyfikatorów w drzewie.
 \newpage

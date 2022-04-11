@@ -1,36 +1,28 @@
 import numpy as np
 
 
-def correct_targets(targets: np.ndarray) -> np.ndarray:
-    """Function correcting targets of dataset to be compatible with SVM.
-
-    Args:
-        targets (np.ndarray): array of targets with only -1 and 1 with shape (n,1)
-
-    Returns:
-        np.ndarray: array of targets from dataset
-    """
-    targets[np.where(targets > 0)] = 1
-    targets[np.where(targets <= 0)] = -1
-    return targets.reshape((targets.shape[0], 1))
-
-
 class SVM:
     """Class represents SVM model.
     """
 
-    def __init__(self, lambd: float, minimizer_params: dict = {}) -> None:
+    def __init__(self,
+                 lambd: float,
+                 minimizer_params: dict = {},
+                 mapper_params: dict = {}) -> None:
         """Class SVM constructor.
 
         Args:
             lambd (float): lambda penalty hiperparameter
             minimizer_params (dict, optional): parameters for gradient descent minimizer. 
                 Defaults to {"beta": 0.01, "max_steps": 10000, "min_epsilon": 1e-20}.
+            mapper_params (dict, optional): parameters predictions mapper. 
+                Defaults to {1: 1, -1: 0}.
         """
         self.W = None
         self.b = None
         self.lambd = lambd
         self._set_minimizer_params(**minimizer_params)
+        self._set_mapper_params(mapper_params)
 
     def _set_minimizer_params(self, **kwargs) -> None:
         """Function setting minimizer params.
@@ -47,6 +39,20 @@ class SVM:
             assert key in default_params.keys()
             assert type(item) is int or type(item) is float
             default_params[key](item)
+
+    def _set_mapper_params(self, usr_mapped_params: dict) -> None:
+        """Function setting mapper params.
+        
+        Args:
+            usr_mapped_params (dict): params for mapper provided by user
+        """
+        mapper_params = {1: 1, -1: 0}
+        for key, item in usr_mapped_params.items():
+            assert key in mapper_params.keys()
+            assert type(key) is int
+            assert type(item) is int
+            mapper_params[key] = item
+        self._mapper = mapper_params
 
     def initialize_model(self, W: np.ndarray, b: float):
         """Model parameters initializer.
@@ -165,7 +171,7 @@ class SVM:
             y (np.ndarray): targets for samples
             is_model_to_init (bool, optional): whether to initialize model parameters with zeros, defaults to True
         """
-        y = correct_targets(targets=y)
+        y = self.correct_targets(targets=y)
         if is_model_to_init:
             self.initialize_model(W=np.zeros(shape=(X.shape[1], 1),
                                              dtype=np.float64),
@@ -181,4 +187,18 @@ class SVM:
         Returns:
             np.ndarray: predictions for given inputs
         """
-        return self._classify_y(X=X)
+        return np.vectorize(self._mapper.__getitem__)(self._classify_y(X=X))
+
+    @staticmethod
+    def correct_targets(targets: np.ndarray) -> np.ndarray:
+        """Function correcting targets of dataset to be compatible with SVM.
+
+        Args:
+            targets (np.ndarray): array of targets with only -1 and 1 with shape (n,1)
+
+        Returns:
+            np.ndarray: array of targets from dataset
+        """
+        targets[np.where(targets > 0)] = 1
+        targets[np.where(targets <= 0)] = -1
+        return targets.reshape((targets.shape[0], 1))

@@ -1,4 +1,4 @@
-from src.SVM.SVM import SVM, correct_targets
+from src.SVM.SVM import SVM
 import numpy as np
 import pytest
 
@@ -6,9 +6,9 @@ import pytest
 def test_correct_tagets():
     targ_1_in = np.array([-3, 2, 0, -1, 1])
     targ_1_out = np.array([[-1], [1], [-1], [-1], [1]])
-    assert correct_targets(targ_1_in).shape == targ_1_out.shape
-    assert (correct_targets(targ_1_in) == targ_1_out).all()
-    assert correct_targets(np.array([])) is not None
+    assert SVM.correct_targets(targ_1_in).shape == targ_1_out.shape
+    assert (SVM.correct_targets(targ_1_in) == targ_1_out).all()
+    assert SVM.correct_targets(np.array([])) is not None
 
 
 def test_svm_init_lambd():
@@ -56,6 +56,20 @@ def test_svm_init_model():
     assert (svm.W == np.array([[0], [0], [0]])).all()
     with pytest.raises(AssertionError):
         svm.initialize_model(W=np.zeros(shape=(3, 1), dtype=np.int64), b=3)
+
+
+def test_svm_init_mapper():
+    svm = SVM(lambd=3)
+    assert svm._mapper == {1: 1, -1: 0}
+    svm = SVM(lambd=3, mapper_params={1: 1, -1: -1})
+    assert svm._mapper != {1: 1, -1: 0}
+    assert svm._mapper == {1: 1, -1: -1}
+    with pytest.raises(AssertionError):
+        svm = SVM(lambd=3, mapper_params={'1': 1})
+    with pytest.raises(AssertionError):
+        svm = SVM(lambd=3, mapper_params={1: '1'})
+    with pytest.raises(AssertionError):
+        svm = SVM(lambd=3, mapper_params={3: 1})
 
 
 def test_f():
@@ -119,11 +133,31 @@ def test_fit():
     assert np.linalg.norm(svm.W - w_hat) < 1e-15
 
 
-def test_predict():
+def test_predict_default():
     svm = SVM(lambd=0.5, minimizer_params={'beta': 0.2, 'max_steps': 1})
     svm.initialize_model(W=np.array([[1], [-1], [1]], dtype=np.float64), b=3)
     X = np.array([[1, 2, 3], [6, 5, 4], [7, 8, 7]], dtype=np.float64)
-    y = np.array([[1], [-1], [1]], dtype=np.float64)
+    y = np.array([[1], [0], [1]], dtype=np.float64)
+    svm.fit(X=X, y=y, is_model_to_init=False)
+    X_E = np.array([[-3, 4, 1], [4, 2, 12]], dtype=np.float64)
+    Y_hat = np.array([[0], [1]], dtype=np.float64)
+    assert svm.predict(X_E).shape == Y_hat.shape
+    assert np.linalg.norm(svm.predict(X_E) - Y_hat) < 1e-15
+
+
+def test_predict_usr_mapper():
+    svm = SVM(lambd=0.5,
+              minimizer_params={
+                  'beta': 0.2,
+                  'max_steps': 1
+              },
+              mapper_params={
+                  1: 1,
+                  -1: -1
+              })
+    svm.initialize_model(W=np.array([[1], [-1], [1]], dtype=np.float64), b=3)
+    X = np.array([[1, 2, 3], [6, 5, 4], [7, 8, 7]], dtype=np.float64)
+    y = np.array([[1], [0], [1]], dtype=np.float64)
     svm.fit(X=X, y=y, is_model_to_init=False)
     X_E = np.array([[-3, 4, 1], [4, 2, 12]], dtype=np.float64)
     Y_hat = np.array([[-1], [1]], dtype=np.float64)
