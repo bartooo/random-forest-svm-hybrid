@@ -2,6 +2,7 @@ import numpy as np
 from typing import Tuple
 from .node import Node
 
+
 class DecisionTree:
     def __init__(
         self,
@@ -106,6 +107,18 @@ class DecisionTree:
         attribute_labels: np.ndarray = None,
         class_labels: np.ndarray = None,
     ) -> Node:
+        """Builds decision tree according to ID3 algorithm
+
+        Args:
+            dataset (np.ndarray): Dataset from which tree will be built
+            depth (int): Current depth of the tree
+            orig_classes (np.ndarray): All classes in original dataset
+            attribute_labels (np.ndarray, optional): Labels of attributes in dataset. Defaults to None.
+            class_labels (np.ndarray, optional): Labels of classes in dataset. Defaults to None.
+
+        Returns:
+            Node: Next created node of the tree
+        """
         if dataset.shape[0] == 0:
             return None
 

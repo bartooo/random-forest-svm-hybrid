@@ -1,6 +1,9 @@
 import numpy as np
-from ..SVM.SVM import SVM
+from src.SVM.SVM import SVM
 from .decision_tree import DecisionTree
+from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.utils.multiclass import unique_labels
+
 
 class RandomForest:
     def __init__(
@@ -9,14 +12,20 @@ class RandomForest:
         tree_max_depth: int,
         tree_min_entropy_diff: float,
         tree_min_node_size: int,
-        tree_max_num_attributes: int = None,
+        svm_lambda: float,
+        svm_mapper_params: dict = {},
+        svm_minimizer_params: dict = {},
+        clf_max_num_attributes: int = None,
     ):
         self.tree_max_depth = tree_max_depth
         self.tree_min_entropy_diff = tree_min_entropy_diff
         self.tree_min_node_size = tree_min_node_size
-        self.tree_max_num_attributes = tree_max_num_attributes
+        self.tree_max_num_attributes = clf_max_num_attributes
         self.num_classifiers = num_classifiers
+        self.svm_lambda = svm_lambda
         self.classifiers = []
+        self.svm_mapper_params = svm_mapper_params
+        self.svm_minimizer_params = svm_minimizer_params
 
     def _bootstrap_dataset(self, dataset: np.ndarray):
         chosen_idxs = np.random.choice(
@@ -35,10 +44,14 @@ class RandomForest:
             y = np.expand_dims(y, axis=1)
 
         dataset = np.concatenate([X, y], axis=1)
-        if self.tree_max_num_attributes > dataset.shape[1] - 1:
+        if (
+            self.tree_max_num_attributes is not None
+            and self.tree_max_num_attributes > dataset.shape[1] - 1
+        ):
             raise Exception("Invalid number of max attributes in Decision Tree")
 
         for i in range(self.num_classifiers):
+            print(f"[{i+1}/{self.num_classifiers}] Training classifier...")
             boostrapped_dataset = self._bootstrap_dataset(dataset)
             if i % 2 == 0:
                 tree = DecisionTree(
@@ -58,19 +71,22 @@ class RandomForest:
                 self.classifiers.append(tree)
             else:
                 svm = SVM(
-                    lambd=1, minimizer_params={"beta": 0.01, "min_epsilon": 1e-20}
+                    lambd=self.svm_lambda,
+                    minimizer_params=self.svm_minimizer_params,
+                    mapper_params=self.svm_mapper_params,
+                    rf_max_attributes=boostrapped_dataset.shape[1] - 1
+                    if self.tree_max_num_attributes is None
+                    else self.tree_max_num_attributes,
                 )
                 svm.fit(boostrapped_dataset[:, :-1], boostrapped_dataset[:, -1])
                 self.classifiers.append(svm)
 
     def _predict_sample(self, sample: np.ndarray) -> int:
-        map_predictions = {1: 1, 0: 0, -1: 1}
         return np.bincount(
             np.squeeze(
                 [
-                    map_predictions[prediction]
+                    classifier.predict(sample).squeeze()
                     for classifier in self.classifiers
-                    for prediction in classifier.predict(sample)
                 ]
             )
         ).argmax()
