@@ -1,4 +1,5 @@
 import argparse
+import pandas as pd
 import numpy as np
 from sklearn.metrics import (
     classification_report,
@@ -16,10 +17,16 @@ import random
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--dataset", type=str, default="breast_cancer", help="Dataset to train on"
+    "--dataset",
+    type=str,
+    default="breast_cancer",
+    help="Dataset to train on",
 )
 parser.add_argument(
-    "--n_folds", type=int, default=10, help="Number of folds used in k-cross validation"
+    "--n_folds",
+    type=int,
+    default=10,
+    help="Number of folds used in k-cross validation",
 )
 parser.add_argument(
     "--num_classifiers",
@@ -37,7 +44,10 @@ parser.add_argument(
     "--tree_min_entropy_diff",
     type=float,
     default=1e-2,
-    help="Minimal difference between entropy value before and after split of a node",
+    help=(
+        "Minimal difference between entropy value before and after"
+        " split of a node"
+    ),
 )
 parser.add_argument(
     "--tree_min_node_size",
@@ -45,15 +55,46 @@ parser.add_argument(
     default=30,
     help="Minimal size of a single node in decision tree",
 )
-parser.add_argument("--svm_lambda", type=float, default=0.05, help="TODO")
-parser.add_argument("--svm_beta", type=float, default=0.01, help="TODO")
-parser.add_argument("--svm_min_epsilon", type=float, default=1e-17, help="TODO")
-parser.add_argument("--svm_max_steps", type=int, default=10000, help="TODO")
+parser.add_argument(
+    "--svm_lambda",
+    type=float,
+    default=0.05,
+    help=(
+        "Degree of importance that is given to misclassifications in"
+        " SVM classifier"
+    ),
+)
+parser.add_argument(
+    "--svm_beta",
+    type=float,
+    default=0.01,
+    help="Learning rate for SGD optimizer in SVM",
+)
+parser.add_argument(
+    "--svm_min_epsilon",
+    type=float,
+    default=1e-17,
+    help=(
+        "Stop criterion as minimal gradient norm for SGD optimizer"
+        " in SVM"
+    ),
+)
+parser.add_argument(
+    "--svm_max_steps",
+    type=int,
+    default=10000,
+    help=(
+        "Stop criterion as maximal iterationsd for SGD optimizer in SVM"
+    ),
+)
 parser.add_argument(
     "--clf_max_num_attributes",
     type=int,
     default=None,
-    help="Maximal number of attributes in dataset to consider in splitting single node of a tree/ to train svm on",
+    help=(
+        "Maximal number of attributes in dataset to consider in"
+        " splitting single node of a tree/ to train svm on"
+    ),
 )
 
 
@@ -62,7 +103,17 @@ def prepare_dataset(name):
         data = load_breast_cancer()
         X = data.data
         y = data.target
-    # TODO: Add remaining datasets
+    elif name == "ionosphere":
+        data = pd.read_csv("./data/ionosphere.data", header=None)
+        data.drop(columns=[0, 1], inplace=True)
+        X = np.array(data.drop(columns=[34]))
+        y = data[34].apply(lambda x: 1 if x == "g" else 0)
+    elif name == "biodegrataion":
+        data = pd.read_csv("./data/biodeg.csv", sep=";", header=None)
+        X = np.array(data.drop(columns=[41]))
+        y = data[41].apply(lambda x: 1 if x == "RB" else 0)
+    else:
+        raise Exception("Wrong dataset name!")
     return X, y
 
 
@@ -109,7 +160,10 @@ def cross_validate(
         )
         val_split = splitted[i]
         train_split = [
-            e for j in range(splitted.shape[0]) for e in splitted[j] if j != i
+            e
+            for j in range(splitted.shape[0])
+            for e in splitted[j]
+            if j != i
         ]
         random_forest.fit(X[train_split], y[train_split])
         val_preds = random_forest.predict(X[val_split])
