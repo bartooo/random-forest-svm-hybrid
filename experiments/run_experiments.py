@@ -15,8 +15,7 @@ logging.getLogger().addHandler(logging.StreamHandler())
 
 N_RUNS = 25
 N_FOLDS = 5
-# DATASETS = {"breast_cancer": 30, "ionosphere": 34, "biodegrataion": 41}
-DATASETS = {"ionosphere": 34, "biodegrataion": 41}
+DATASETS = {"breast_cancer": 30, "ionosphere": 34, "biodegrataion": 41}
 
 
 def run_models():
