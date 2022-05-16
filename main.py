@@ -1,5 +1,5 @@
 import argparse
-from utils import cross_validate
+from experiments.experiments_utils import cross_validate
 
 # Examplary running command:
 # python .\main.py --dataset breast_cancer --num_classifiers 2 --n_folds 5

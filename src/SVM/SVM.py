@@ -332,6 +332,5 @@ class SVM:
         Returns:
             np.ndarray: array of targets from dataset
         """
-        targets[np.where(targets > 0)] = 1
-        targets[np.where(targets <= 0)] = -1
+        targets = np.where(targets > 0, 1, -1)
         return targets.reshape((targets.shape[0], 1))
