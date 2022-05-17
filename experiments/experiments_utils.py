@@ -1,3 +1,6 @@
+"""
+Authors: Bartosz Cywiński, Łukasz Staniszewski
+"""
 import pandas as pd
 import numpy as np
 from sklearn.metrics import (
@@ -66,41 +69,26 @@ def cross_validate(
             raise Exception("Lambda param for SVM not specified")
         for i in range(splitted.shape[0]):
             print(f"Training of fold nr {i+1}...")
-            svm = SVM(
-                lambd=svm_lambda, minimizer_params=svm_minimizer_params
-            )
+            svm = SVM(lambd=svm_lambda, minimizer_params=svm_minimizer_params)
             val_split = splitted[i]
             train_split = [
-                e
-                for j in range(splitted.shape[0])
-                for e in splitted[j]
-                if j != i
+                e for j in range(splitted.shape[0]) for e in splitted[j] if j != i
             ]
             svm.fit(X[train_split], y[train_split])
             val_preds = svm.predict(X[val_split])
             val_accs.append(accuracy_score(y[val_split], val_preds))
-            val_recalls.append(
-                recall_score(y[val_split], val_preds, zero_division=0)
-            )
+            val_recalls.append(recall_score(y[val_split], val_preds, zero_division=0))
             val_precisions.append(
-                precision_score(
-                    y[val_split], val_preds, zero_division=0
-                )
+                precision_score(y[val_split], val_preds, zero_division=0)
             )
-            val_f1.append(
-                f1_score(y[val_split], val_preds, zero_division=0)
-            )
+            val_f1.append(f1_score(y[val_split], val_preds, zero_division=0))
     elif which_model == "tree":
         if tree_max_depth is None:
             raise Exception("Max depth for decision tree not specified")
         if tree_min_entropy_diff is None:
-            raise Exception(
-                "Min entropy difference for decision tree not specified"
-            )
+            raise Exception("Min entropy difference for decision tree not specified")
         if tree_min_node_size is None:
-            raise Exception(
-                "Min node size for decision tree not specified"
-            )
+            raise Exception("Min node size for decision tree not specified")
         for i in range(splitted.shape[0]):
             print(f"Training of fold nr {i+1}...")
             tree = DecisionTree(
@@ -110,40 +98,25 @@ def cross_validate(
             )
             val_split = splitted[i]
             train_split = [
-                e
-                for j in range(splitted.shape[0])
-                for e in splitted[j]
-                if j != i
+                e for j in range(splitted.shape[0]) for e in splitted[j] if j != i
             ]
             tree.fit(X[train_split], y[train_split])
             val_preds = tree.predict(X[val_split])
             val_accs.append(accuracy_score(y[val_split], val_preds))
-            val_recalls.append(
-                recall_score(y[val_split], val_preds, zero_division=0)
-            )
+            val_recalls.append(recall_score(y[val_split], val_preds, zero_division=0))
             val_precisions.append(
-                precision_score(
-                    y[val_split], val_preds, zero_division=0
-                )
+                precision_score(y[val_split], val_preds, zero_division=0)
             )
-            val_f1.append(
-                f1_score(y[val_split], val_preds, zero_division=0)
-            )
+            val_f1.append(f1_score(y[val_split], val_preds, zero_division=0))
     elif which_model == "hybrid":
         if num_classifiers is None:
-            raise Exception(
-                "Number of classifiers in forest not specified"
-            )
+            raise Exception("Number of classifiers in forest not specified")
         if tree_max_depth is None:
             raise Exception("Max depth for decision tree not specified")
         if tree_min_entropy_diff is None:
-            raise Exception(
-                "Min entropy difference for decision tree not specified"
-            )
+            raise Exception("Min entropy difference for decision tree not specified")
         if tree_min_node_size is None:
-            raise Exception(
-                "Min node size for decision tree not specified"
-            )
+            raise Exception("Min node size for decision tree not specified")
         if svm_lambda is None:
             raise Exception("Lambda param for svm not specified")
         for i in range(splitted.shape[0]):
@@ -161,25 +134,16 @@ def cross_validate(
             )
             val_split = splitted[i]
             train_split = [
-                e
-                for j in range(splitted.shape[0])
-                for e in splitted[j]
-                if j != i
+                e for j in range(splitted.shape[0]) for e in splitted[j] if j != i
             ]
             random_forest.fit(X[train_split], y[train_split])
             val_preds = random_forest.predict(X[val_split])
             val_accs.append(accuracy_score(y[val_split], val_preds))
-            val_recalls.append(
-                recall_score(y[val_split], val_preds, zero_division=0)
-            )
+            val_recalls.append(recall_score(y[val_split], val_preds, zero_division=0))
             val_precisions.append(
-                precision_score(
-                    y[val_split], val_preds, zero_division=0
-                )
+                precision_score(y[val_split], val_preds, zero_division=0)
             )
-            val_f1.append(
-                f1_score(y[val_split], val_preds, zero_division=0)
-            )
+            val_f1.append(f1_score(y[val_split], val_preds, zero_division=0))
     else:
         raise Exception(
             "Param which_model wrongly specified, possible options:"

@@ -1,12 +1,13 @@
+"""
+Authors: Bartosz Cywiński, Łukasz Staniszewski
+"""
 from experiments.run_experiments import run_parameters, run_models
 import argparse
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description=(
-            "Experiments performer for SVM with Decision Tree hybrid."
-        )
+        description=("Experiments performer for SVM with Decision Tree hybrid.")
     )
     parser.add_argument(
         "-WHAT",

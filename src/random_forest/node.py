@@ -1,4 +1,8 @@
+"""
+Authors: Bartosz Cywiński, Łukasz Staniszewski
+"""
 import numpy as np
+
 
 class Node:
     def __init__(

@@ -1,3 +1,6 @@
+"""
+Authors: Bartosz Cywiński, Łukasz Staniszewski
+"""
 from sklearn.model_selection import train_test_split
 from src.SVM.SVM import SVM
 import numpy as np
@@ -62,9 +65,7 @@ def test_svm_init_min_params():
     with pytest.raises(SVMMinParamsException):
         svm = SVM(lambd=2, minimizer_params={"wrong_key_name": 1e-10})
     with pytest.raises(SVMMinParamsException):
-        svm = SVM(
-            lambd=2, minimizer_params={"beta": "wrong_type_value"}
-        )
+        svm = SVM(lambd=2, minimizer_params={"beta": "wrong_type_value"})
 
 
 def test_svm_init_model():
@@ -73,9 +74,7 @@ def test_svm_init_model():
     assert svm.b == 3
     assert (svm.W == np.array([[0], [0], [0]])).all()
     with pytest.raises(SVMWrongTypeParamsExceptions):
-        svm.initialize_model(
-            W=np.zeros(shape=(3, 1), dtype=np.int64), b=3
-        )
+        svm.initialize_model(W=np.zeros(shape=(3, 1), dtype=np.int64), b=3)
 
 
 def test_svm_init_mapper():
@@ -94,9 +93,7 @@ def test_svm_init_mapper():
 
 def test_f():
     svm = SVM(lambd=3)
-    svm.initialize_model(
-        W=np.array([[1], [-1], [1]], dtype=np.float64), b=3
-    )
+    svm.initialize_model(W=np.array([[1], [-1], [1]], dtype=np.float64), b=3)
     X = np.array([[1, 2, 3], [6, 5, 4], [7, 8, 7]])
     y_hat = np.array([[-1], [2], [3]])
     assert svm._f(X=X).shape == y_hat.shape
@@ -107,9 +104,7 @@ def test_f():
 
 def test_classify_y():
     svm = SVM(lambd=3)
-    svm.initialize_model(
-        W=np.array([[1], [-1], [1]], dtype=np.float64), b=3
-    )
+    svm.initialize_model(W=np.array([[1], [-1], [1]], dtype=np.float64), b=3)
     X = np.array([[1, 2, 3], [6, 5, 4], [7, 8, 7]])
     y_hat = np.array([[-1], [1], [1]])
     assert svm._classify_y(X=X).shape == y_hat.shape
@@ -120,9 +115,7 @@ def test_classify_y():
 
 def test_jacobian_f():
     svm = SVM(lambd=0.5)
-    svm.initialize_model(
-        W=np.array([[1], [-1], [1]], dtype=np.float64), b=3
-    )
+    svm.initialize_model(W=np.array([[1], [-1], [1]], dtype=np.float64), b=3)
     X = np.array([[1, 2, 3], [6, 5, 4], [7, 8, 7]])
     Y = np.array([[1], [-1], [1]])
     delta_w_hat = np.array([[6], [2], [2]])
@@ -132,17 +125,12 @@ def test_jacobian_f():
     assert (delta_w_hat == delta_w).all()
     assert delta_b_hat == delta_b
     with pytest.raises(SVMWrongDimExceptions):
-        assert (
-            svm._jacobian_f(X=np.array([[]]), y=np.array([[]]))
-            is not None
-        )
+        assert svm._jacobian_f(X=np.array([[]]), y=np.array([[]])) is not None
 
 
 def test_minimize():
     svm = SVM(lambd=0.5, minimizer_params={"beta": 0.2, "max_steps": 1})
-    svm.initialize_model(
-        W=np.array([[1], [-1], [1]], dtype=np.float64), b=3
-    )
+    svm.initialize_model(W=np.array([[1], [-1], [1]], dtype=np.float64), b=3)
     X = np.array([[1, 2, 3], [6, 5, 4], [7, 8, 7]], dtype=np.float64)
     y = np.array([[1], [-1], [1]], dtype=np.float64)
     svm._gradient_descent_minimize(X=X, y=y)
@@ -154,9 +142,7 @@ def test_minimize():
 
 def test_fit():
     svm = SVM(lambd=0.5, minimizer_params={"beta": 0.2, "max_steps": 1})
-    svm.initialize_model(
-        W=np.array([[1], [-1], [1]], dtype=np.float64), b=3
-    )
+    svm.initialize_model(W=np.array([[1], [-1], [1]], dtype=np.float64), b=3)
     X = np.array([[1, 2, 3], [6, 5, 4], [7, 8, 7]], dtype=np.float64)
     y = np.array([[1], [-1], [1]], dtype=np.float64)
     svm.fit(X=X, y=y, is_model_to_init=False)
@@ -176,14 +162,12 @@ def test_fit_not_init():
 
 def test_predict_default():
     svm = SVM(lambd=0.5, minimizer_params={"beta": 0.2, "max_steps": 1})
-    svm.initialize_model(
-        W=np.array([[1], [-1], [1]], dtype=np.float64), b=3
-    )
+    svm.initialize_model(W=np.array([[1], [-1], [1]], dtype=np.float64), b=3)
     X = np.array([[1, 2, 3], [6, 5, 4], [7, 8, 7]], dtype=np.float64)
     y = np.array([[1], [0], [1]], dtype=np.float64)
     svm.fit(X=X, y=y, is_model_to_init=False)
     X_E = np.array([[-3, 4, 1], [4, 2, 12]], dtype=np.float64)
-    Y_hat = np.array([0,1], dtype=np.int32)
+    Y_hat = np.array([0, 1], dtype=np.int32)
     assert svm.predict(X_E).shape == Y_hat.shape
     assert np.linalg.norm(svm.predict(X_E) - Y_hat) < 1e-13
 
@@ -201,9 +185,7 @@ def test_predict_usr_mapper():
         minimizer_params={"beta": 0.2, "max_steps": 1},
         mapper_params={1: 1, -1: -1},
     )
-    svm.initialize_model(
-        W=np.array([[1], [-1], [1]], dtype=np.float64), b=3
-    )
+    svm.initialize_model(W=np.array([[1], [-1], [1]], dtype=np.float64), b=3)
     X = np.array([[1, 2, 3], [6, 5, 4], [7, 8, 7]], dtype=np.float64)
     y = np.array([[1], [0], [1]], dtype=np.float64)
     svm.fit(X=X, y=y, is_model_to_init=False)
@@ -216,13 +198,9 @@ def test_predict_usr_mapper():
 def test_randomized_attributes():
     svm = SVM(lambd=3, rf_max_attributes=4)
     with pytest.raises(SVMWrongDimExceptions):
-        svm.initialize_model(
-            W=np.array([[1], [-1], [1]], dtype=np.float64), b=3
-        )
+        svm.initialize_model(W=np.array([[1], [-1], [1]], dtype=np.float64), b=3)
     with pytest.raises(SVMRFNoDataException):
-        svm.initialize_model(
-            W=np.array([[1], [-1], [1], [3]], dtype=np.float64), b=3
-        )
+        svm.initialize_model(W=np.array([[1], [-1], [1], [3]], dtype=np.float64), b=3)
     X_E = np.array([[-3, 4, 1, 2]], dtype=np.float64)
     svm.initialize_model(
         W=np.array([[1], [-1], [1], [3]], dtype=np.float64), b=3, X=X_E
