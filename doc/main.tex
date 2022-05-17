@@ -1,0 +1,533 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Bachelor's & Master's Thesis Template             %%
+%% Copyleft by Artur M. Brodzki & Piotr Woźniak      %%
+%% Covered for Lab/Assigment report by Tymon Żarski  %%
+%% Faculty of Electronics and Information Technology %%
+%% Warsaw University of Technology, 2019-2020        %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+\documentclass[
+    left=2.5cm,         % Sadly, generic margin parameter
+    right=2.5cm,        % doesnt't work, as it is
+    top=2.5cm,          % superseded by more specific
+    bottom=3cm,         % left...bottom parameters.
+    bindingoffset=6mm,  % Optional binding offset.
+    nohyphenation=false % You may turn off hyphenation, if don't like.
+]{eiti/eiti-report}
+
+\langpol % Dla języka angielskiego mamy \langeng
+\graphicspath{{img/}}             % Katalog z obrazkami.
+\addbibresource{bibliografia.bib} % Plik .bib z bibliografią
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings} % Code listings, with syntax highlighting
+\usepackage{amsmath}
+\usepackage{amssymb}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\argmin}{arg\,min}
+
+
+\begin{document}
+
+%--------------------------------------
+% Strona tytułowa
+%--------------------------------------
+\instytut{XXXXXX}
+\przedmiot{Uczenie Maszynowe - Projekt}
+\specjalnosc{Sztuczna Inteligencja}
+\title{
+    Połączenie Lasu Losowego ID3 z Maszyną Wektorów\\
+    Nośnych (SVM) w zadaniu klasyfikacji binarnej
+}
+\reportDescription{
+    Projekt wstępny
+}
+
+\author{Bartosz Cywiński, Łukasz Staniszewski}
+\album{304025, 304098}
+
+\prowadzacy{dr Rafał Biedrzycki}
+\date{\today}
+\maketitle
+
+%--------------------------------------
+% Spis treści
+%--------------------------------------
+\tableofcontents
+
+%--------------------------------------
+% Rozdziały
+%--------------------------------------
+\cleardoublepage % Zaczynamy od nieparzystej strony
+\pagestyle{headings}
+
+\newpage % Rozdziały zaczynamy od nowej strony
+\section{Temat projektu}
+
+Celem projektu jest implementacja połączenia lasu losowego z SVM w zadaniu klasyfikacji binarnej. Wykonana zostanie własna implementacja obu algorytmów na podstawie źródeł \cite{wsisvm},  \cite{umasvm} oraz \cite{eslII}. Najistotniejszą modyfikacją w stosunku do klasycznego algorytmu lasu losowego będzie to, że klasyfikatorem w lesie będzie zarówno drzewo decyzyjne ID3 jak i SVM, zakładając że będzie taka sama liczność obu klasyfikatorów. Proces inferencji w lesie losowym będzie niezmienny, a więc ostateczną predykcją dla danego przykładu będzie najliczniej przewidywana klasa przez wszystkie klasyfikatory. 
+%Zadaniem rozwiązywanym przez taki las losowy będzie klasyfikacja binarna.
+
+\section{Drzewo decyzyjne}
+Pierwszym z klasyfikatorów użytych w zmodyfikowanym lesie losowym będzie drzewo decyzyjne. Algorytmem uczenia drzewa będzie algorytm ID3. Drzewo decyzyjne zaimplementowane będzie w sposób uniwersalny na tyle, żeby poprawnie działało zarówno dla klasyfikacji binarnej jak i wieloklasowej.
+
+\subsection{Opis algorytmu}
+
+
+\begin{algorithm}
+\caption{ID3}\label{alg:cap}
+\hspace*{\algorithmicindent} \textbf{Input:} \begin{math}\mathit{S}\end{math}: zbiór par uczących, \begin{math}\mathit{Y}\end{math}: zbiór klas, $D$: zbiór atrybutów wejściowych, \begin{math}\mathit{d}\end{math}: obecna głębokość drzewa
+\begin{algorithmic}[1]
+\If {\texttt{\begin{math}S=\emptyset\end{math}}}
+    \Return
+\EndIf\\
+
+\If {wszystkie przykłady należą do klasy $y$}\\
+    \Return {Liść z klasą $y$}
+\EndIf\\
+
+
+\State{\begin{math} (j,t)=\argmin_{j,t}{H(S)} \end{math}}
+\State{\texttt{Root} = węzeł zbudowany na zbiorze $S$}
+\If{!stop}
+    \State{\texttt{Root.left = ID3}($S_{-}$, $Y$, $D$, $d+1$)}
+    \State{\texttt{Root.right = ID3}($S_{+}$, $Y$, $D$, $d+1$)}
+\EndIf \\
+\Return{\texttt{Root}}
+
+\end{algorithmic}
+\end{algorithm}
+
+Drzewo decyzyjne ma strukturę drzewa binarnego. W każdym węźle, podczas konstruowania drzewa, wyszukiwany jest atrybut w zbiorze wszystkich atrybutów zbioru danych oraz jego konkretna wartość, która podzieli zbiór danych na dwa podzbiory w taki sposób, aby suma entropii podzbiorów była jak najmniejsza. Na podstawie powstałych w wyniku operacji podziału podzbiorów rekurencyjnie tworzone są kolejne węzły drzewa decyzyjnego.
+
+Drzewo decyzyjne ma następujące atrybuty:
+\begin{enumerate}
+    \item maksymalna głębokość drzewa
+    \item minimalna różnica między entropią po podziale, a entropią przed podziałem
+    \item minimalna liczba przykładów w węźle drzewa
+\end{enumerate}
+
+Oznaczając zbiór przykładów z etykietami jako $S$, na początku procesu uczenia drzewa decyzyjnego, drzewo ma tylko jeden węzeł (korzeń), który zawiera wszystkie przykłady ze zbioru $S$. Kolejno wskutek wywołania algorytmu ID3 rozpoczyna się właściwy proces uczenia drzewa, opisany przedstawionym powyżej pseudokodem.\\
+
+\textit{Linie 1-2:}
+Jeśli w zbiorze $S$, który był argumentem algorytmu ID3, nie ma już żadnej pary uczącej, proces dalszego uczenia drzewa należy zatrzymać.\\
+
+\textit{Linie 4-6:}
+Jeśli w zbiorze $S$ znajdują się przykłady należące tylko do jednej klasy, to znaczy że zbiór jest już idealnie podzielony i nie należy kontynuować procesu uczenia, więc zwracany jest liść drzewa, którego predykcja jest jedyną klasą w zbiorze $S$.\\
+
+\textit{Linia 8:}
+Oznaczając zbiór wszystkich atrybutów w zbiorze danych jako $D$, dla każdego indeksu atrybutu $j=0,...,D-1$ oraz dla każdej wartości atrybutu występującej w zbiorze danych $t$ wykonywane są następujące kroki:
+\begin{enumerate}
+  \item Zbiór wszystkich par uczących $S$ dzielony jest na dwa podzbiory: \begin{math}S_{-}=\{(x,y)|(x,y)\in{S}, x^{(j)}<t\}, S_{+}=\{(x,y)|(x,y)\in{S}, x^{(j)}\ge{t}\}\end{math}.
+  \item Oceniana jest jakość podziału. W tym celu liczona jest entropia podziału jako entropia ważona dwóch zbiorów: \begin{math}H(S_{-}, S_{+})=\frac{|S_{-}|}{|S|}H(S_{-})+\frac{|S_{+}|}{|S|}H(S_{+})\end{math}, przy czym wartość entropii $H$ dla zbioru $S$ definiuje się jako: \begin{math}
+      H(S)=\sum_{c\in{C}}{-p(c)\log_2p(c)}
+  \end{math}, gdzie $C$ to zbiór wszystkich klas obecnych w zbiorze $S$, a $p(c)$ to stosunek liczby przykładów klasy $c$ w zbiorze $S$ do liczby wszystkich przykładów w zbiorze $S$. \\
+\end{enumerate}
+
+
+Wykonując powyższe kroki znajdywany jest taki atrybut $j$ oraz taka jego wartość $t$ dla których entropia jest najniższa.\\
+
+\textit{Linia 10:}
+Aby dokonać podziału węzła spełnione muszą być następujące warunki:
+\begin{enumerate}
+    \item Nie może być przekroczona maksymalna głębokość drzewa.
+    \item Różnica między entropią $H(S)$, a entropią ważoną $H(S_{-}, S_{+})$ musi być większa od minimalnej dopuszczalnej różnicy między wartościami entropii.
+    \item Liczność, zarówno zbioru $S_{-}$, jak i zbioru $S_{+}$ musi być większa od minimalnej dopuszczalnej liczby przykładów w węźle drzewa.
+\end{enumerate}
+W przypadku niespełnienia jakiegokolwiek z powyższych warunków dany węzeł drzewa nie zostanie dalej podzielony.\\
+
+\textit{Linie 11-12:}
+Do obecnego korzenia (węzła Root), przypisywane są węzły dzieci. Węzły te tworzone są przez rekursywne wywołanie algorytmu ID3, kolejno dla podzbiorów $S_{-}$, jak i $S_{+}$, jednocześnie zwiększając obecną głębokość drzewa o 1.
+
+\subsubsection{Przykładowe obliczenia przy podziale zbioru danych:}
+Zakładając, że: 
+\begin{gather*}
+    S = \{([0, 2, 5], 0), ([0, 4, 6], 1), ([0, -1, 7], 0)\}
+\end{gather*}
+Analizując ten prosty zbiór danych można zauważyć, że atrybut o indeksie $j = 1$ oraz jego wartość $t = 4$ podzieli zbiór $S$ tworząc podzbiory $S_{-}$ oraz $S_{+}$ w sposób następujący:
+\begin{gather*}
+    S_{-} = \{(x,y)|(x,y)\in{S}, x^{(1)}<4\} = \{([0, 2, 5], 0), ([0, -1, 7], 0)\},\\
+    S_{+} = \{(x,y)|(x,y)\in{S}, x^{(1)}\ge{4}\} = \{([0, 4, 6], 1)\}
+\end{gather*}
+Zatem licząc entropie poszczególnych zbiorów:
+\begin{gather*}
+H(S_{-})=-\frac{2}{2}\log_2{\frac{2}{2}} + (-\frac{0}{2}\log_2{\frac{0}{2}}) = 0 + 0 = 0\\
+H(S_{+})=-\frac{0}{1}\log_2{\frac{0}{2}} + (-\frac{1}{1}\log_2{\frac{1}{1}}) = 0 + 0 = 0\\
+H(S_{-}, S_{+})=\frac{2}{3}H(S_{-})+\frac{1}{3}H(S_{+})  = \frac{2}{3}\cdot0+\frac{1}{3}\cdot0 = 0
+\end{gather*}
+Widać na tym przykładzie, że entropia podziału zbioru $S$ jest równa jej minimalnej możliwej wartości, bo podzbiory $S_{-}$ i $S_{+}$ idealnie podzieliły zbiór $S$ pod względem klas. Dla odróżnienia, gdyby został wybrany ten sam atrybut o indeksie $j = 1$, ale o wartości $t = 2$, podział wyglądałby następująco:
+\begin{gather*}
+    S_{-} = \{(x,y)|(x,y)\in{S}, x^{(1)}<2\} = \{([0, -1, 7], 0)\},\\
+    S_{+} = \{(x,y)|(x,y)\in{S}, x^{(1)}\ge{2}\} = \{([0, 2, 5], 0), ([0, 4, 6], 1)\}
+\end{gather*}
+Ponownie licząc entropie poszczególnych zbiorów:
+\begin{gather*}
+H(S_{-})=-\frac{0}{1}\log_2{\frac{0}{1}} + (-\frac{1}{1}\log_2{\frac{1}{1}}) = 0 + 0 = 0\\
+H(S_{+})=-\frac{1}{2}\log_2{\frac{1}{2}} + (-\frac{1}{2}\log_2{\frac{1}{2}}) = \frac{1}{2} + \frac{1}{2} = 1\\
+H(S_{-}, S_{+})=\frac{1}{3}H(S_{-})+\frac{2}{3}H(S_{+})  = \frac{1}{3}\cdot0+\frac{2}{3}\cdot{1} = \frac{2}{3}
+\end{gather*}
+Co pokazuje, że gdy zbiory byłyby tak podzielone, entropia miałaby większą wartość, dlatego też podział nie zostałby wybrany jako najlepszy możliwy.
+
+
+\subsection{Predykcje algorytmu}
+Po całkowitym wykonaniu się algorytmu uczącego drzewo ID3, drzewo jest w pełni zbudowane i można na nim wykonywać predykcje. Dla pojedynczej próbki danych algorytm przechodzi od korzenia do liścia, w każdym węźle wybierając dziecko do którego powinien następnie przejść na podstawie wartości atrybutu podziału danego węzła dla próbki danych. Mianowicie, przyjmując za $j$ indeks atrybutu podziału danego węzła, a za $t$ przyjmując wartość tego atrybutu, jeśli dla próbki danych $x$: \begin{math}
+    x^{(j)} < t
+\end{math}, to algorytm przechodzi do lewego dziecka. W przeciwnym przypadku, algorytm przejdzie do prawego dziecka. Po dotarciu do liścia drzewa decyzyjnego, jako predykcja zwracana jest klasa większościowa danego liścia.
+
+
+\section{Algorytm SVM}
+Drugim z klasyfikatorów użytych w implementacji będzie Maszyna Wektorów Nośnych (SVM) dopuszczająca pomyłki. SVM implementowany jest dla przypadku binarnego ze zbiorem klas $Y=\{-1,1\}$, a także, dla ułatwienia implementacji, zakładana jest wersja algorytmu bez przekształcenia jądrowego (bazowe jądro liniowe).
+
+\subsection{Opis algorytmu}
+Zadanie polega na znalezieniu funkcji rozgraniczającej $ f(x)={x\cdot w-b} $, która tworzy hiperpłaszczyznę zapewniającą klasyfikację. Otrzymana funkcja powinna zapewniać jak najmniejszą liczbę pomyłek przy klasyfikowaniu elementów zbioru wejściowego do odpowiedniej klasy.
+
+
+Klasyfikacja odbywa się poprzez zwrócenie dla danego zestawu cech $x$ klasy $y(x) = -1 $ lub $ y(x) = 1$, do której przynależność wynika z następującej zależności:
+\begin{equation}
+y(x) =
+{
+\left\{
+\begin{array}{ll}
+-1 & \textrm{, $f(x) \leq 0$}\\
+1 & \textrm{, $f(x) > 0$}
+\end{array}
+\right
+}
+\end{equation}
+Na końcu procesu inferencji, otrzymane predykcje są mapowane z powrotem do odpowiednich klas ze zbioru $X$, przykładowo: $-1 \xrightarrow{} 0 $.
+\\
+Ze względu na trenowanie dopuszczające pomyłki, aby otrzymać wyżej wymienioną funkcję $f$, należy znaleźć parametry $(w,b)$, minimalizujące funkcję straty $J$:
+\begin{align}
+    (w,b)=\argmin_{w,b} J(w,b)\\
+    J(w,b)=\Sigma_i\cdot \xi_i + \lambda\cdot ||w||^2
+\end{align}
+\newpage
+Przy czym, istotne są odpowiednie ograniczenia (gdzie $\xi_i$ oznacza stratę dla $i$-tego przykładu trenującego, jeśli klasyfikacja jest błędna; a $\lambda$ decyduje o istotności szerokości regionu separującego):
+\begin{align}
+    \lambda > 0 \\
+    \forall_i \;[ \xi_i \ge 0 \:\land\: y_i\cdot(x_i\cdot w-b) \ge 1-\xi_i ]
+\end{align}
+
+Wymienione wyżej warunki (4) oraz (5) w połączeniu z postacią funkcji straty (3) implikują ostateczną postać funkcji $J$:
+\begin{equation}
+    J(w,b)=\Sigma_i\max(1-f(x_i)\cdot y_i, 0) + \lambda\cdot||w||^2
+\end{equation}
+
+\\
+Powyższy opis algorytmu można podsumować w postaci algorytmu uczenia (Algorithm 2) oraz algorytmu predykcji (Algorithm 3). W algorytmie predykcji zastosowane zostało wyrażenie logiczne, zwracające $1$ gdy jest prawdziwe, a $0$ gdy fałszywe, co pozwala mu zwracać numery klas zamiast liczb rzeczywistych. Na końcu, zwracane klasy mapowane są do odpowiednich wartości, przykładowo: $-1 \xrightarrow{} 0 $. W algorytmie uczenia, początkowo poprawiane są wejściowe etykiety tak, aby były ze zbioru $\{-1,1\}$, następnie inicjalizowane są parametry modelu i przekazywane do metody optymalizacyjnej, której opis znajduje się w następnym podrozdziale. Na końcu zwracane są wytrenowane parametry modelu. 
+
+\begin{algorithm}
+\caption{Uczenie SVM}\label{alg:cap}
+\hspace*{\algorithmicindent} \textbf{Input:} \begin{math}\mathit{X}\end{math}: zestaw przykładów dla zbioru trenującego, \begin{math}\mathit{Y}\end{math}: zestaw etykiet dla zbioru trenującego, 
+\begin{math}\lambda\end{math}: parametr funkcji straty, \begin{math}\mathit{V}\end{math}: wektor parametrów dla optymalizatora
+\begin{algorithmic}[1]
+\State{\begin{math} Y'= \end{math} \texttt{correct\_targets}(\begin{math}Y \end{math})}
+\State{\texttt{initialize:}\begin{math} w_0 = [0\;0\;...\;0]^T \end{math} \texttt{, }\begin{math} b_0 = 0 \end{math}}
+\State{\begin{math}(w,b)=\end{math}\texttt{ gradient\_descent}(\begin{math}w_0, b_0,X,Y',V,\lambda\end{math})}
+\State{\Return \begin{math}(w,b)\end{math}}
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{Predykcja SVM}\label{alg:cap}
+\hspace*{\algorithmicindent} \textbf{Input:} \begin{math}\mathit{X}\end{math}: zestaw przykładów dla zbioru ewaluacyjnego,
+\begin{math}\mathit{(w,b)}\end{math}: parametry modelu,
+\begin{math}\lambda\end{math}: parametr funkcji straty
+\begin{algorithmic}[1]
+\State{\Return \texttt{repair\_targets}(\begin{math}2\cdot((X\cdot w - b) > 0) -1\end{math})}
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Optymalizacja}
+Istotnym elementem uczenia modelu SVM, jest wyznaczenie jego parametrów poprzez minimalizację funkcji straty $J$. Zaimplementowany został algorytm Stochastycznego Spadku Gradientowego (Stochastic Gradient Descent / SGD), do którego działania wymagane jest obliczenie gradientu funkcji straty $J(w,b)$ po parametrach modelu $w$ oraz $b$.
+\begin{equation}
+\nabla J =
+\begin{bmatrix}
+    \partial J \over \partial w_1 &
+    \hdots &
+    \partial J \over \partial w_n &
+    \partial J \over \partial b
+\end{bmatrix}^T
+\end{equation}
+
+Gradient ten jest wektorem pochodnych cząstkowych wyliczanych po kolejnych parametrach modelu (gdzie $x_{k[i]}$ oznacza $i$-ty atrybut $k$-tego przykładu).
+
+\begin{align}
+    {\partial J \over \partial w_i}=
+    {\lambda \cdot 2 \cdot w_i} + \Sigma_k(1 \cdot
+    {\left\{ \begin{array}{ll}
+        0 & \textrm{, $ 1-f(x_k\cdot )y_k \leq 0$ }\\
+        -y_k \cdot x_{k[i]} & \textrm{, $ 1-f(x_k)\cdot y_k > 0$}
+    \end{array}\right })
+    \\
+    {\partial J \over \partial b}=
+    \Sigma_k (1 \cdot {
+        \left\{ \begin{array}{ll}
+            0 & \textrm{, $ 1-f(x_k) \cdot y_k \leq 0$ }\\
+            y_k & \textrm{, $ 1-f(x_k) \cdot y_k > 0$}
+        \end{array}\right
+    }
+    )
+\end{align}
+
+Zaimplementowany optymalizator SGD można przedstawić w formie algorytmu (Algorithm 4). Metoda zakłada jednokrotne przetworzenie całego zbioru trenującego w ramach jednego kroku i rozpoczyna się od ustalenia parametrów optymalizatora, gdzie $max\_steps$ oznacza maksymalną liczbę kroków optymalizacji, $min\_steps$ oznacza najmniejszą możliwą normę z parametrów modelu, natomiast $\beta$ to tzw. learning rate.
+
+\begin{algorithm}
+\caption{SGD}\label{alg:cap}
+\hspace*{\algorithmicindent} \textbf{Input:} \begin{math}(\mathit{w}_0,\mathit{b}_0)\end{math}: zainicjowane parametry modelu, \begin{math}\mathit{X}\end{math}: zbiór przykładów (wejść), $Y$: zbiór etykiet (wyjść), \begin{math}\mathit{V}\end{math}: parametry optymalizatora, \begin{math}\lambda\end{math}: współczynnik \begin{math}\lambda\end{math} modelu
+\begin{algorithmic}[1]
+\State{\begin{math} (max\_steps,\beta,min\_eps)=\mathit{V}\end{math}}
+\State{\begin{math} (\mathit{w},\mathit{b})=(\mathit{w}_0,\mathit{b}_0)\end{math}}
+\State{\begin{math} step=0\end{math}}
+\While {\begin{math} step\leq max\_steps\end{math}}
+	\State{
+	    \begin{math} \nabla w= 
+	        {\lambda \cdot 2 \cdot w_i} + \Sigma_k(1 \cdot
+	        {\left\{\begin{array}{ll}
+                0 & \textrm{, $ 1-f(x_k)\cdot y_k \leq 0$ }\\
+                -y_k \cdot x_{k[i]} & \textrm{, $ 1-f(x_k)\cdot y_k > 0$}
+            \end{array}\right })
+        \end{math}
+        \texttt{ for each }
+        \begin{math}i=1...M\end{math}
+    }
+    \State{
+        \begin{math} \nabla b=
+            \Sigma_k (1 \cdot {
+            \left\{ \begin{array}{ll}
+                0 & \textrm{, $ 1-f(x_k) \cdot y_k \leq 0$ }\\
+                y_k & \textrm{, $ 1-f(x_k) \cdot y_k > 0$}
+            \end{array}\right })
+        \end{math}
+    }
+    \If{\begin{math}|\mathit{w}| < min\_eps\end{math}}
+        \Return \begin{math} (\mathit{w},\mathit{b}) \end{math}
+	\EndIf
+    \State{\begin{math} \mathit{w} = \mathit{w} - \beta \cdot \nabla \mathit{w} \end{math}}
+    \State{\begin{math} \mathit{b} = \mathit{w} - \beta \cdot \nabla \mathit{b} \end{math}}
+    \State{\begin{math} step = step + 1 \end{math}}
+\EndWhile
+\State{\Return \begin{math} (\mathit{w},\mathit{b}) \end{math}}
+
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Przykładowe obliczenia}
+Zakładając, że z każdym przykładem związane są 3 atrybuty i istnieje następujący zbiór treningowy $T$  składający się z 3 przykładów oraz zbiór ewaluacyjny $E$ składający się z 2 przykładów:
+\begin{gather*}
+    X_T= \begin{vmatrix}
+        1&2&3\\
+        6&5&4\\
+        7&8&7\\
+    \end{vmatrix},
+    Y_T= \begin{vmatrix}
+        1\\
+        0\\
+        1\\
+    \end{vmatrix}, 
+    X_E= \begin{vmatrix}
+        -3&4&1\\
+        4&2&12\\
+    \end{vmatrix}
+\end{gather*}
+Na początku konieczne jest przerobienie etykiet klas dla przykładów trenujących oraz inicjalizacja modelu:
+\begin{gather*}
+    Y'_T= \begin{vmatrix}
+        1\\
+        \pmb{-1}\\
+        1
+    \end{vmatrix}, 
+    w = \begin{vmatrix}
+        1\\
+        -1\\
+        1
+    \end{vmatrix},  b = 3
+\end{gather*}
+Przy założeniu, że $max\_steps=1$, $\lambda = 0.5$ oraz $\beta = 0.2$, wykonywany jest jeden krok SGD:
+\begin{gather*}
+    1-f(X_T)\cdot Y'_T = \begin{vmatrix}
+        2\\
+        3\\
+        -2
+    \end{vmatrix} \implies
+    \nabla w = \begin{vmatrix}
+        0.5 \cdot 2 \cdot 1 + \texttt{sum(}\begin{vmatrix}
+        -1 &
+        6 &
+        0
+    \end{vmatrix}^T\texttt{)}\\
+        0.5 \cdot 2 \cdot -1 + \texttt{sum(}\begin{vmatrix}
+        -2 &
+        5 &
+        0
+    \end{vmatrix}^T\texttt{)}\\
+        0.5 \cdot 2 \cdot 1 + \texttt{sum(}\begin{vmatrix}
+        -3 &
+        4 &
+        0
+    \end{vmatrix}^T\texttt{)}
+    \end{vmatrix} = \begin{vmatrix}
+        6\\
+        2\\
+        2
+    \end{vmatrix}\\
+    1-f(X_T)\cdot Y'_T = \begin{vmatrix}
+        2 &
+        3 &
+        -2
+    \end{vmatrix}^T \implies
+    \nabla b = \texttt{sum(}\begin{vmatrix}
+        1 &
+        -1 &
+        0
+    \end{vmatrix}^T\texttt{)} = 0
+\end{gather*}
+Na końcu uczenia ustalane są ostateczne parametry modelu:
+\begin{gather*}
+    w = 
+        \begin{vmatrix}
+            1\\
+            -1\\
+            1
+        \end{vmatrix} - 0.2 \cdot \begin{vmatrix}
+            6\\
+            2\\
+            2
+        \end{vmatrix} = \begin{vmatrix}
+            -0.2\\
+            -1.4\\
+            0.6
+        \end{vmatrix}
+    , b =
+    3 - 0.2 \cdot 0 = 3
+\end{gather*}
+\\
+    Po ustaleniu parametrów modelu, można przejść do predykcji:
+\begin{gather*}
+    Y_E = 2\cdot (
+            (\begin{vmatrix}
+                -3&4&1\\
+                4&2&12\\
+            \end{vmatrix}
+            \cdot 
+            \begin{vmatrix}
+                -0.2\\
+                -1.4\\
+                0.6
+            \end{vmatrix} 
+            - 3
+            ) 
+        > 0) -1 = 
+        2 \cdot (
+        \begin{vmatrix}
+                -7.4\\
+                0.6
+        \end{vmatrix} 
+        > 0) - 1 = 
+        \begin{vmatrix}
+                -1\\
+                1
+        \end{vmatrix} 
+\end{gather*}
+
+\section{Las losowy}
+Las losowy będzie wykorzystywał oba algorytmy opisane powyżej. Za klasycznym algorytmem lasu losowego stoi idea baggingu. W algorytmie konstruuje się wiele nieskorelowanych drzew losowych, a następnie się je uśrednia. W przypadku modyfikacji algorytmu, wykonywanego w ramach projektu, zamiast samych drzew decyzyjnych, występował będzie zbiór klasyfikatorów - drzew decyzyjnych oraz SVM. Każdy klasyfikator wytrenowany będzie na zbiorze próbek danych losowanych z oryginalnego zbioru ze zwracaniem. Ponadto w procesie uczenia drzewa losowego przed każdym podziałem węzła losowany będzie bez zwracania podzbiór indeksów atrybutów uwzględnianych w procesie podziału. Natomiast w procesie uczenia SVM, podzbiór indeksów atrybutów losowany będzie raz, przed rozpoczęciem procedury treningowej. Zasadniczą ideą baggingu jest uśrednienie wielu modeli z dość małym obciążeniem, w skutek czego zmniejszana jest ich wariancja.
+
+\subsection{Opis algorytmu}
+
+\begin{algorithm}
+\caption{Las losowy}\label{alg:cap}
+\hspace*{\algorithmicindent} \textbf{Input:} \begin{math}\mathit{S}\end{math}: zbiór par uczących, \begin{math}\mathit{Y}\end{math}: zbiór klas, $D$: zbiór atrybutów wejściowych, $B$: liczba klasyfikatorów
+\begin{algorithmic}[1]
+\For {b = 1 to B:}
+    \State{Wylosuj ze zwracaniem $|S|$ próbek danych ze zbioru $S$.}
+    \If{b$\mod$ 2 == 0}
+        \State{Wytrenuj drzewo decyzyjne algorytmem ID3 na wylosowanym zbiorze, przed każdym podziałem węzła losując bez zwracania podzbiór \begin{math}
+            m \leq |D|
+        \end{math} atrybutów uwzględnianych przy jego podziale.}
+    \Else
+        \State{Wylosuj bez zwracania podzbiór podzbiór \begin{math}
+            m \leq |D|
+        \end{math} atrybutów. Wytrenuj SVM na wylosowanym zbiorze, uwzględniając tylko wylosowane atrybuty.}
+    \EndIf
+    \State{Dodaj wytrenowany klasyfikator do zbioru klasyfikatorów lasu losowego.}
+\end{algorithmic}
+\end{algorithm}
+
+\textit{Linia 1:}
+Liczba wszystkich klasyfikatorów w lesie losowym jest hiperparametrem algorytmu lasu losowego, z zastrzeżeniem że musi być ona podzielna przez 2, ponieważ zakładamy że las składa się z drzew decyzyjnych oraz SVM na przemian.\\
+
+\textit{Linia 2:}
+Trenując każdy model w lesie losowym na różnych podzbiorach oryginalnego zbioru danych (z założeniem, że próbki danych w podzbiorze mogą się powtarzać) redukowana jest wariancja modelu, w skutek czego zmniejszane jest przeuczenie lasu.\\
+
+\textit{Linie 4-6:}
+Przed każdym podziałem węzła w drzewie decyzyjnym losowany jest bez zwracania podzbiór atrybutów rozważanych podczas podziału. Ta modyfikacja klasycznego algorytmu uczenia drzewa zmniejsza korelacje między poszczególnymi drzewami w lesie. Gdyby ta modyfikacja nie była zastosowana, atrybutami podziału węzłów w większości drzew w lesie byłyby takie, które najskuteczniej dzielą zbiór danych. Wskutek tego las składałby się ze skorelowanych drzew, co nie zwiększyłoby skuteczności modelu, ponieważ słabe klasyfikatory w lesie byłyby zgodne co do złych predykcji, a to by skutkowało błędnymi ostatecznymi predykcjami lasu. Podobnie przed uczeniem SVM losowany jest bez zwracania podzbiór atrybutów uwzględnianych w procesie uczenia - model uczy się tylko na tych atrybutach.
+\subsection{Predykcje algorytmu}
+Po wytrenowaniu wszystkich klasyfikatorów, predykcją lasu losowego jest klasa większościowa w zbiorze predykcji każdego z klasyfikatorów w drzewie.
+\newpage
+\section{Plan eksperymentów}
+\subsection{Analiza skuteczności hybrydy lasu losowego z SVM}
+Wykonane zostaną symulacje mające na celu porównanie zaimplementowanej hybrydy Lasu Losowego i SVM z klasycznym Lasem Losowym w zadaniu klasyfikacji binarnej pod względem metryk dokładności (accuracy), odzysku (recall) oraz precyzji (precision), a także macierzy pomyłek (confusion matrix). Wnioski i analizy przeprowadzone zostaną na zagregowanych wynikach z 25 uruchomień, na których wyliczona zostanie średnia arytmetyczna, mediana, odchylenie standardowe czy wartości minimalne i maksymalne. Badania wykonane zostaną na 3 zbiorach danych opisanych niżej.
+
+\subsection{Analiza wpływu hiperparametrów na skuteczność}
+Odrębnym eksperymentem będzie analiza wpływu hiperparametrów wszystkich modeli użytych w projekcie na skuteczność architektury. Przeszukanie przestrzeni hiperparametrów będzie wykonane metodą grid search. Analizowanymi hiperparametrami będzie dla SVM: $\lambda$; dla drzew decyzyjnych: maksymalna głębokość, minimalna różnica między entropią po podziale a entropią przed podziałem w węźle, minimalna liczba przykładów w węźle, maksymalna liczba atrybutów uwzględnianych przy podziale węzła; a także dla lasu losowego: liczba klasyfikatorów.
+% \begin{enumerate}
+%     \item $\lambda$ dla modelu SVM
+%     \item Maksymalna głębokość drzewa decyzyjnego
+%     \item Minimalna różnica między entropią po podziale, a entropią przed podziałem w węźle drzewa decyzyjnego
+%     \item Minimalna liczba przykładów w węźle drzewa decyzyjnego
+%     \item Liczba klasyfikatorów w lesie losowym
+%     \item Maksymalna liczba atrybutów uwzględnianych przy podziale węzła drzewa decyzyjnego
+% \end{enumerate}
+
+\subsection{Zbiory danych}
+Eksperymenty zostaną wykonane na 3 zbiorach danych opisanych w poniższej tabeli. Dla każdego ze zbiorów zostanie wykonana walidacja krzyżowa, gdzie ostateczny wynik na zbiorze testowym będzie estymowany na zasadzie makro-uśredniania, tzn. jako średnia wartość wskaźników jakości uzyskanych na wszystkich podziałach.
+
+% \begin{center}
+\begin{table}[h]
+\centering
+\begin{tabular}{ |p{3cm}||p{6cm}|p{2cm}|p{2cm}|  }
+    \hline
+    \normalsize{Nazwa zbioru}& \normalsize{Opis} & \footnotesize{Liczba przykładów pozytywnych} & \footnotesize{Liczba przykładów negatywnych}\\
+    \hline
+     \textbf{Breast Cancer} \cite{datasetbreast} & Zbiór danych składający się z $569$ przykładów posiadających $30$ atrybutów ciągłych. & 212 & 357 \\
+    \hline
+     \textbf{Ionosphere}  \cite{datasetionosphere} & Zbiór danych składający się z $351$ przykładów posiadających $34$ atrybuty ciągłe. & $225$ & $126$\\
+    \hline
+     \textbf{QSAR biodegradation} \cite{datasetqsar} & Zbiór danych składający się z $1055$ przykładów posiadających $41$ atrybuty ciągłe. & $356$ &  $699$\\
+    \hline
+\end{tabular}
+\caption{Opis zbiorów danych, które zostaną wykorzystane do eksperymentów numerycznych.}
+\label{tab:my_label}
+\end{table}
+% \end{center}
+
+
+%--------------------------------------------
+% Literatura
+%--------------------------------------------
+% \cleardoublepage % Zaczynamy od nieparzystej strony
+\clearpage
+\printbibliography
+
+
+% %--------------------------------------------
+% % Spisy (opcjonalne)
+% %--------------------------------------------
+% \pagestyle{plain}
+
+% \vspace{0.8cm}
+
+% \vspace{1cm}          % vertical space
+% \listofappendicestoc  % Spis załączników
+
+% % Załączniki
+% \newpage
+% \appendix{Nazwa załącznika 1}
+% \appendix{Nazwa załącznika 2}
+% \appendix{Nazwa załącznika 3}
+
+
+
+\end{document}
