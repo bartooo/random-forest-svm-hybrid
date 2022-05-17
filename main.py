@@ -1,3 +1,6 @@
+"""
+Authors: Bartosz Cywiński, Łukasz Staniszewski
+"""
 import argparse
 from experiments.experiments_utils import cross_validate
 
@@ -34,8 +37,7 @@ parser.add_argument(
     type=float,
     default=1e-2,
     help=(
-        "Minimal difference between entropy value before and after"
-        " split of a node"
+        "Minimal difference between entropy value before and after" " split of a node"
     ),
 )
 parser.add_argument(
@@ -49,8 +51,7 @@ parser.add_argument(
     type=float,
     default=0.05,
     help=(
-        "Degree of importance that is given to misclassifications in"
-        " SVM classifier"
+        "Degree of importance that is given to misclassifications in" " SVM classifier"
     ),
 )
 parser.add_argument(
@@ -63,18 +64,13 @@ parser.add_argument(
     "--svm_min_epsilon",
     type=float,
     default=1e-17,
-    help=(
-        "Stop criterion as minimal gradient norm for SGD optimizer"
-        " in SVM"
-    ),
+    help=("Stop criterion as minimal gradient norm for SGD optimizer" " in SVM"),
 )
 parser.add_argument(
     "--svm_max_steps",
     type=int,
     default=10000,
-    help=(
-        "Stop criterion as maximal iterationsd for SGD optimizer in SVM"
-    ),
+    help=("Stop criterion as maximal iterationsd for SGD optimizer in SVM"),
 )
 parser.add_argument(
     "--clf_max_num_attributes",

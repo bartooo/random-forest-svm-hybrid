@@ -1,3 +1,6 @@
+"""
+Authors: Bartosz Cywiński, Łukasz Staniszewski
+"""
 import numpy as np
 from sklearn import tree
 from src.SVM.SVM import SVM
@@ -57,17 +60,11 @@ class RandomForest:
             self.tree_max_num_attributes is not None
             and self.tree_max_num_attributes > dataset.shape[1] - 1
         ):
-            raise Exception(
-                "Invalid number of max attributes in Decision Tree"
-            )
+            raise Exception("Invalid number of max attributes in Decision Tree")
         for i in range(self.num_classifiers):
-            print(
-                f"[{i+1}/{self.num_classifiers}] Training classifier..."
-            )
+            print(f"[{i+1}/{self.num_classifiers}] Training classifier...")
             boostrapped_dataset = self._bootstrap_dataset(dataset)
-            if (
-                i % 2 == 0 or self.is_only_tree
-            ) and not self.is_only_svm:
+            if (i % 2 == 0 or self.is_only_tree) and not self.is_only_svm:
                 tree = DecisionTree(
                     max_depth=self.tree_max_depth,
                     min_entropy_diff=self.tree_min_entropy_diff,
@@ -113,8 +110,6 @@ class RandomForest:
             X = np.expand_dims(X, axis=0)
 
         if len(self.classifiers) > 0:
-            return np.array(
-                [self._predict_sample(sample) for sample in X]
-            )
+            return np.array([self._predict_sample(sample) for sample in X])
         else:
             raise Exception("Random Forest is not trained yet")

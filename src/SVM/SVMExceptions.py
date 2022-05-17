@@ -1,3 +1,8 @@
+"""
+Authors: Bartosz Cywiński, Łukasz Staniszewski
+"""
+
+
 class SVMMinParamsException(Exception):
     """Raised when user provided keys for SVM Minimizer are not correct."""
 
