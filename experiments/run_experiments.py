@@ -181,7 +181,7 @@ def run_models():
 
 
 def run_parameters():
-    NUM_CLASSIFIERS = [2, 8, 14, 20]
+    NUM_CLASSIFIERS = [2, 8, 14, 20, 200]
     TREE_MAX_DEPTHS = [2, 6, 10]
     TREE_MIN_NODE_SIZES = [20, 60, 100]
     TREE_MIN_ENTROPY_DIFFS = [0, 1e-2]
@@ -196,7 +196,9 @@ def run_parameters():
                 for tree_min_entropy_diff in TREE_MIN_ENTROPY_DIFFS:
                     for tree_min_node_size in TREE_MIN_NODE_SIZES:
                         for svm_lambda in SVM_LAMBDAS:
-                            for max_attr in np.arange(1, DATASETS[dataset], 8):
+                            for max_attr in np.arange(
+                                1, DATASETS[dataset], 8
+                            ):
                                 times = []
                                 accs = []
                                 recalls = []
@@ -240,8 +242,12 @@ def run_parameters():
                                     end = time.time()
                                     times.append(end - start)
                                     accs.append(results["val_accuracy"])
-                                    recalls.append(results["val_recall"])
-                                    precisions.append(results["val_precision"])
+                                    recalls.append(
+                                        results["val_recall"]
+                                    )
+                                    precisions.append(
+                                        results["val_precision"]
+                                    )
                                     f1s.append(results["val_f1"])
                                     logging.info(
                                         f"[{i+1}/{N_RUNS}] Acc:"
@@ -308,4 +314,6 @@ def run_parameters():
                                     f" {np.mean(f1s):.3f} Mean time:"
                                     f" {np.mean(times)}\n"
                                 )
-                                results_df.to_csv("./experiments/logs/results.csv")
+                                results_df.to_csv(
+                                    "./experiments/logs/results.csv"
+                                )
